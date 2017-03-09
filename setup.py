@@ -10,7 +10,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="scrape-utils",
-    version="0.0.1",
+    version="0.0.3",
     license="MIT",
     author="Mardix",
     author_email="mardix@pylot.io",
@@ -21,7 +21,10 @@ setup(
     include_package_data=True,
     packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
     install_requires=[
-        "requests"
+        "requests",
+        "grab",
+        "bitarray",
+        "mmh3"
     ],
     keywords=['scrape-utils'],
     platforms='any',

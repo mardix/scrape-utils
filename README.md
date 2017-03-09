@@ -32,9 +32,56 @@ Features:
     import scrape_utils 
     
     url = "http://example.com/xysh.png"
-    path = scrape_utils.download(url, "/tmp")
+    path = scrape_utils.save_file(url, "/tmp")
     
     
+---
+
+## Use BloomFilter
+    
+
+    from scrape_utils import BloomFilter
+    
+    bf = BloomFilter()
+    bf.add("hello")
+    bf.add("jones")
+
+    if "jones" in bf:
+        print("It has it")
+
+    if not bf.contains("bossa"):
+        print("Not here")
+        
+        
+To use BF with Redis, add `connection`, the redis connection, `key` the key name
+to connect to use Redis instead of memory
+
+---
+
+## Use Spider and Task
+
+`Spider` and `Task` come from the `grab` library
+
+https://github.com/lorien/grab
+
+    from scrape_utils import Spider, Task
+    import logging
+    
+    logging.basicConfig(level=logging.DEBUG)
     
     
+    class ExampleSpider(Spider):
+        def task_generator(self):
+            for lang in 'python', 'ruby', 'perl':
+                url = 'https://www.google.com/search?q=%s' % lang
+                yield Task('search', url=url, lang=lang)
     
+        def task_search(self, grab, task):
+            print('%s: %s' % (task.lang, grab.doc('//div[@class="s"]//cite').text()))
+    
+    
+    bot = ExampleSpider(thread_number=2)
+    bot.run()
+
+
+

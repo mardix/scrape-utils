@@ -2,6 +2,11 @@
 
 scrape-utils
 
+It contains
+    - Spider
+    - Task
+    - Bloomfilter
+    - UserAgents
 
 - requirements
     requests==2.12.4
@@ -17,6 +22,8 @@ import ua_list
 import json
 import random
 import time
+from .bloom import BloomFilter
+from grab.spider import Spider, Task
 
 redis_store = None
 STORE_TYPE = "file"  # redis | file | memory
@@ -41,26 +48,25 @@ def request(url, **kwargs):
     :param kwargs:
     :return:
     """
+    proxies = {
+        "http": get_random_proxy(),
+        "https": get_random_proxy(),
+    }
+    headers = {
+        "Connection": "close",  # another way to cover tracks
+        "User-Agent": get_random_user_agent()
+    }
 
-    headers = kwargs.pop("headers", {})
-    headers.update({
-        "user-agent": ua_list.get_random(),
-        "proxies": {
-            "http": get_random_proxy(),
-            "https": get_random_proxy("https://"),
-        }
-    })
-
-    r = requests.get(url.strip(), headers=headers, **kwargs)
+    r = requests.get(url.strip(), headers=headers, proxies=proxies, **kwargs)
     if r.status_code != 200:
         raise Exception(
             "Unable to fetch url '%s'. Status Code: %s" % (url, r.status_code))
     return r
 
 
-def download(url, path, **kwargs):
+def save_file(url, path, **kwargs):
     """
-    Download an object (image, etc) to a path
+    To save a file into local path
     :param url: the url
     :param path: where to download the file to
     :param kwargs: request kwargs
@@ -74,7 +80,8 @@ def download(url, path, **kwargs):
     name = uuid.uuid4().hex
     name += ".%s" % ext
     filepath = os.path.join(path, name)
-    r = request(url, stream=True, **kwargs)
+    #r = request(url, stream=True, **kwargs)
+    r = requests.get(url, stream=True)
     with open(filepath, 'wb') as fd:
         for chunk in r.iter_content(chunk_size=128):
             fd.write(chunk)
@@ -96,14 +103,8 @@ def load_proxies_list(proxies):
 
 # ------------------------------------------------------------------------------
 
-
-def _fetch_public_proxies(region=None):
-    region = region or PUBLIC_PROXY_ENDPOINT
-    url = "%s/%s/" % (PUBLIC_PROXIES_URL, region)
-    r = requests.get(url)
-    if r.status_code != 200:
-        raise Exception("Error[%s] fetching %s" % (r.status_code, url))
-    return r.json().get("data")
+def get_random_user_agent():
+    return ua_list.get_random()
 
 
 def get_random_proxy(scheme=None):
@@ -178,3 +179,13 @@ def get_random_proxy(scheme=None):
                 return rand
     else:
         return random.choice(data)
+
+
+def _fetch_public_proxies(region=None):
+    region = region or PUBLIC_PROXY_ENDPOINT
+    url = "%s/%s/" % (PUBLIC_PROXIES_URL, region)
+    r = requests.get(url)
+    if r.status_code != 200:
+        raise Exception("Error[%s] fetching %s" % (r.status_code, url))
+    return r.json().get("data")
+
