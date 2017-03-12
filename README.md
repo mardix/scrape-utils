@@ -16,13 +16,13 @@ Features:
     pip install scrape-utils 
     
     
-## Use to request a page
+## Get the page content
 
     import scrape_utils 
     from bs4 import BeautifulSoup
     
     url = "http://exmaple.com"
-    r = scrape_utils.request(url)
+    content = scrape_utils.get_url(url)
     soup = Beautifulsoup(r.content, "html.parser")
     
     
@@ -35,6 +35,14 @@ Features:
     path = scrape_utils.save_file(url, "/tmp")
     
     
+## Phone numbers
+
+You can extract phone numbers. 
+
+    import scrape_utils
+    txt = "blah blah (753)746-6382 blah blah"
+    list_numbers = scrape_utils.extract_phone_numbers(txt)
+
 ---
 
 ## Use BloomFilter

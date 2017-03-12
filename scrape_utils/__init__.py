@@ -5,11 +5,10 @@ scrape-utils
 It contains
     - Spider
     - Task
+    - Grab
     - Bloomfilter
     - UserAgents
 
-- requirements
-    requests==2.12.4
 
 https://free-public-proxies.herokuapp.com
 
@@ -17,17 +16,82 @@ https://free-public-proxies.herokuapp.com
 
 import os
 import uuid
+import re
 import requests
 import ua_list
 import json
 import random
 import time
 from .bloom import BloomFilter
+from grab import Grab
 from grab.spider import Spider, Task
+
+REGEXP_PHONE_NUMBER = r"(?:\+?(\d{1})?-?\(?(\d{3})\)?[\s\-\.]?)?(\d{3})[\s\-\.]?(\d{4})[\s\-\.]?"
+r_phone_number = re.compile(REGEXP_PHONE_NUMBER)
+r_emails = re.compile(r"[\w\.-]+@[\w\.-]+\.\w+")
+
+def extract_phone_numbers(string):
+    """
+    Return a list of tuples of phone numbers
+    :param string:
+    :return: list of tuples
+        [('1', '234', '567', '890'), ('', '', '', '')]
+    """
+    return r_phone_number.findall(string)
+
+
+def is_phone_number_valid(string):
+    return True if r_phone_number.match(string) else False
+
+
+def extract_emails(string):
+    """
+    Return a list of all emails found
+    :param string:
+    :return: list
+    """
+    return r_emails.findall(string)
+
+
+def get_url(url, **kwargs):
+    """
+    A wrapper around Grab.go to the content of a url
+    It will return the content of the page if the response is 200 or None
+    :param url: string
+    :param kwargs: params
+    :return: String
+    """
+    g = Grab()
+    r = g.go(url.strip(), **kwargs)
+    return None if r.code != 200 else r.body
+
+
+def save_file(url, location):
+    """
+    Save a file from a url
+    :param url: url
+    :param location: location to save file
+    :return:
+    """
+
+    _url2 = url
+    if "?" in _url2:
+        _url2 = os.path.splitext(_url2.split("?")[0])
+    ext = os.path.splitext(_url2)[1][1:].lower()
+    name = uuid.uuid4().hex
+    name += ".%s" % ext
+    filepath = os.path.join(location, name)
+    r = requests.get(url, stream=True)
+    with open(filepath, 'wb') as fd:
+        for chunk in r.iter_content(chunk_size=128):
+            fd.write(chunk)
+    return filepath
+
+
+# ------------------------------------------------------------------------------
 
 redis_store = None
 STORE_TYPE = "file"  # redis | file | memory
-
 PUBLIC_PROXIES_URL = "https://free-public-proxies.herokuapp.com"
 PROXY_LIST_TTL = 300
 PUBLIC_PROXY_ENDPOINT = "all"
@@ -38,54 +102,6 @@ _store = {
     "ttl": 0,
     "data": []
 }
-
-
-def request(url, **kwargs):
-    """
-    Fecth is wrapper around requests.get, but it adds random user agents
-    and proxy
-    :param url:
-    :param kwargs:
-    :return:
-    """
-    proxies = {
-        "http": get_random_proxy(),
-        "https": get_random_proxy(),
-    }
-    headers = {
-        "Connection": "close",  # another way to cover tracks
-        "User-Agent": get_random_user_agent()
-    }
-
-    r = requests.get(url.strip(), headers=headers, proxies=proxies, **kwargs)
-    if r.status_code != 200:
-        raise Exception(
-            "Unable to fetch url '%s'. Status Code: %s" % (url, r.status_code))
-    return r
-
-
-def save_file(url, path, **kwargs):
-    """
-    To save a file into local path
-    :param url: the url
-    :param path: where to download the file to
-    :param kwargs: request kwargs
-    :return: str - the file path
-    """
-
-    _url2 = url
-    if "?" in _url2:
-        _url2 = os.path.splitext(_url2.split("?")[0])
-    ext = os.path.splitext(_url2)[1][1:].lower()
-    name = uuid.uuid4().hex
-    name += ".%s" % ext
-    filepath = os.path.join(path, name)
-    #r = request(url, stream=True, **kwargs)
-    r = requests.get(url, stream=True)
-    with open(filepath, 'wb') as fd:
-        for chunk in r.iter_content(chunk_size=128):
-            fd.write(chunk)
-    return filepath
 
 
 def load_proxies_list(proxies):
@@ -100,8 +116,6 @@ def load_proxies_list(proxies):
         "data": proxies
     })
 
-
-# ------------------------------------------------------------------------------
 
 def get_random_user_agent():
     return ua_list.get_random()
