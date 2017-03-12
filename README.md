@@ -35,13 +35,20 @@ Features:
     path = scrape_utils.save_file(url, "/tmp")
     
     
-## Phone numbers
+## Extract Phone numbers
 
 You can extract phone numbers. 
 
     import scrape_utils
     txt = "blah blah (753)746-6382 blah blah"
     list_numbers = scrape_utils.extract_phone_numbers(txt)
+
+
+## Extract Emails
+
+    import scrape_utils
+    txt = "blah blah jake@yahoo.com "
+    list_emails = scrape_utils.extract_emails(txt)    
 
 ---
 

@@ -30,14 +30,15 @@ REGEXP_PHONE_NUMBER = r"(?:\+?(\d{1})?-?\(?(\d{3})\)?[\s\-\.]?)?(\d{3})[\s\-\.]?
 r_phone_number = re.compile(REGEXP_PHONE_NUMBER)
 r_emails = re.compile(r"[\w\.-]+@[\w\.-]+\.\w+")
 
+
 def extract_phone_numbers(string):
     """
-    Return a list of tuples of phone numbers
+    Return a list of phone numbers
     :param string:
-    :return: list of tuples
-        [('1', '234', '567', '890'), ('', '', '', '')]
+    :return: list
     """
-    return r_phone_number.findall(string)
+    r = r_phone_number.findall(string)
+    return ["".join(filter(None, n)) for n in r] if r else []
 
 
 def is_phone_number_valid(string):
