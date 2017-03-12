@@ -8,6 +8,10 @@ Features:
 
 - Random User Agents
 - Random Proxy List
+- Extract phone numbers
+- Extract emails
+- Make url request
+- Bloom Filter
 
 ---
 
